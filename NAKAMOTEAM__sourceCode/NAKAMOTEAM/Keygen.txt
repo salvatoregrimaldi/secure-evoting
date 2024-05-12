@@ -1,0 +1,93 @@
+CertKeystoreGeneration Servers
+cd 'C:\Program Files\Java\jdk1.8.0_211\bin'
+
+CertKeystoreGeneration Voters
+cd 'C:\Program Files\Git\usr\bin'
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CERT
+% Per ogni server vengono generati, usando keytool, una coppia di chiavi PK-SK ed un certificato, che poi vengono messi in un file che prende il nome di keystore.
+% Ogni server dispone di un proprio keystore
+% Per ogni client vengono generati una coppia di chiavi PK-SK ed un certificato con OpenSSL
+
+SGen
+./keytool -genkey -noprompt -trustcacerts -keyalg RSA -alias gencert -dname "cn=sgen, ou=CEN, l=Campania" -keypass sergen -keystore keystoreGen.jks
+./keytool -export -alias gencert -storepass sergen -file keystoreGen.cer -keystore keystoreGen.jks
+
+SBal
+./keytool -genkey -noprompt -trustcacerts -keyalg RSA -alias balcert -dname "cn=sbal, ou=CEN, l=Campania" -keypass serbal -keystore keystoreBal.jks
+./keytool -export -alias balcert -storepass serbal -file keystoreBal.cer -keystore keystoreBal.jks
+
+SPlat
+./keytool -genkey -noprompt -trustcacerts -keyalg RSA -alias platcert -dname "cn=splat, ou=CEN, l=Campania" -keypass serplat -keystore keystorePlat.jks
+./keytool -export -alias platcert -storepass serplat -file keystorePlat.cer -keystore keystorePlat.jks
+
+STab
+./keytool -genkey -noprompt -trustcacerts -keyalg RSA -alias tabcert -dname "cn=stab, ou=CEN, l=Campania" -keypass sertab -keystore keystoreTab.jks
+./keytool -export -alias tabcert -storepass sertab -file keystoreTab.cer -keystore keystoreTab.jks
+
+Timer
+./keytool -genkey -noprompt -trustcacerts -keyalg RSA -alias timcert -dname "cn=stim, ou=CEN, l=Campania" -keypass sertim -keystore keystoreTim.jks
+./keytool -export -alias timcert -storepass sertim -file keystoreTim.cer -keystore keystoreTim.jks
+
+Voters
+./openssl.exe req -new -x509 -out voter1.crt -keyout voter1.pem
+./openssl.exe req -new -x509 -out voter2.crt -keyout voter2.pem
+./openssl.exe req -new -x509 -out voter3.crt -keyout voter3.pem
+./openssl.exe req -new -x509 -out voter4.crt -keyout voter4.pem
+./openssl.exe req -new -x509 -out voter5.crt -keyout voter5.pem
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+TRUSTSTORE
+
+% Per ciascun server/votante X viene generato un trust store, in cui vengono messi i certificati digitali dei soggetti con cui X deve connettersi via TLS bidirezionale
+
+SGen
+./keytool -import -v -trustcacerts -alias balcert -keystore truststoreGen.jks -file keystoreBal.cer -keypass sergen 
+./keytool -import -v -trustcacerts -alias platcert -keystore truststoreGen.jks -file keystorePlat.cer -keypass sergen
+./keytool -import -v -trustcacerts -alias timcert -keystore truststoreGen.jks -file keystoreTim.cer -keypass sergen 
+
+SBal
+./keytool -import -v -trustcacerts -alias gencert -keystore truststoreBal.jks -file keystoreGen.cer -keypass serbal
+./keytool -import -v -trustcacerts -alias platcert -keystore truststoreBal.jks -file keystorePlat.cer -keypass serbal
+./keytool -import -v -trustcacerts -alias tabcert -keystore truststoreBal.jks -file keystoreTab.cer -keypass serbal
+./keytool -import -v -trustcacerts -alias timcert -keystore truststoreBal.jks -file keystoreTim.cer -keypass serbal
+./keytool -import -v -trustcacerts -alias balcert -keystore truststoreBal.jks -file keystoreBal.cer -keypass serbal
+
+SPlat
+./keytool -import -v -trustcacerts -alias gencert -keystore truststorePlat.jks -file keystoreGen.cer -keypass serplat
+./keytool -import -v -trustcacerts -alias balcert -keystore truststorePlat.jks -file keystoreBal.cer -keypass serplat
+./keytool -import -v -trustcacerts -alias timcert -keystore truststorePlat.jks -file keystoreTim.cer -keypass serplat
+./keytool -import -v -trustcacerts -alias v1cert -keystore truststorePlat.jks -file voter1.crt -keypass serplat
+./keytool -import -v -trustcacerts -alias v2cert -keystore truststorePlat.jks -file voter2.crt -keypass serplat
+./keytool -import -v -trustcacerts -alias v3cert -keystore truststorePlat.jks -file voter3.crt -keypass serplat
+./keytool -import -v -trustcacerts -alias v4cert -keystore truststorePlat.jks -file voter4.crt -keypass serplat
+./keytool -import -v -trustcacerts -alias v5cert -keystore truststorePlat.jks -file voter5.crt -keypass serplat
+
+STab
+./keytool -import -v -trustcacerts -alias balcert -keystore truststoreTab.jks -file keystoreBal.cer -keypass sertab
+
+Timer
+./keytool -import -v -trustcacerts -alias gencert -keystore truststoreTim.jks -file keystoreGen.cer -keypass sertim
+./keytool -import -v -trustcacerts -alias balcert -keystore truststoreTim.jks -file keystoreBal.cer -keypass sertim
+./keytool -import -v -trustcacerts -alias platcert -keystore truststoreTim.jks -file keystorePlat.cer -keypass sertim
+
+Voters
+./keytool -import -v -trustcacerts -alias platcert -keystore truststoreVoters.jks -file keystorePlat.cer -keypass voters
+
+JDKVoters
+% Per ogni votante, si prendono la coppia di chiavi ed il certificato e li si mette entrambi in un file apposito di tipo pkcs12, con estensione p12
+./openssl pkcs12 -export -out voter1.p12 -inkey voter1.pem -in voter1.crt -name "voter1"
+./openssl pkcs12 -export -out voter2.p12 -inkey voter2.pem -in voter2.crt -name "voter2"
+./openssl pkcs12 -export -out voter3.p12 -inkey voter3.pem -in voter3.crt -name "voter3"
+./openssl pkcs12 -export -out voter4.p12 -inkey voter4.pem -in voter4.crt -name "voter4"
+./openssl pkcs12 -export -out voter5.p12 -inkey voter5.pem -in voter5.crt -name "voter5"
+
+% Per ogni votante il file pkcs12 viene messo nell'apposito keystore
+./keytool -importkeystore -srckeystore voter1.p12 -srcstoretype pkcs12 -destkeystore voter1.jks
+./keytool -importkeystore -srckeystore voter2.p12 -srcstoretype pkcs12 -destkeystore voter2.jks
+./keytool -importkeystore -srckeystore voter3.p12 -srcstoretype pkcs12 -destkeystore voter3.jks
+./keytool -importkeystore -srckeystore voter4.p12 -srcstoretype pkcs12 -destkeystore voter4.jks
+./keytool -importkeystore -srckeystore voter5.p12 -srcstoretype pkcs12 -destkeystore voter5.jks
